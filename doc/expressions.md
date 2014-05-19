@@ -1,10 +1,7 @@
-# General Notes
+# General Notes on the Expression Language
 
 This document is a lightweight explanation of the Expression Language
-used in the Classification Service.
-
-The document is _not_ about Rules themselves, but about the expression
-evaluated when the rule is applied to a list of assets.
+used with the `match-expr` library.
 
 The Expression Language is easy enough to author expressions by hand,
 certainly no more difficult than spreadsheet formulas. However, it's
@@ -17,76 +14,82 @@ what the expressions look like and what they attempt to achieve.
 
 # Expression Evaluation
 
-The Classification Service applies each expression to all the assets
-in the database, looking for matches, something like this bit of
-pseudo-Python:
+The general use case for the language is an application that applies
+each expression to a bunch of key/value hash maps in a data store,
+looking for matches, something like this bit of pseudo-Python:
 
-    def filterAssets(assets, rule):
+    class Rule:
+      expr = '(and (= :a "1") (= :b "2"))'
+      groups = ["Cool", "Snazzy"]
+
+    def filterObjects(objects, rule):
         matches = []
-        for asset in assets:
-            if eval(asset, rule.expr):
-                matches.append([asset.id rule.classifications])
+        for object in objects:
+            if eval(object, rule.expr):
+                matches.append([object.id, rule.groups])
             return matches
 
-Based on matches, the Classification Service assigns classifications
-(just strings, basically) to the asset and publishes the result as a
-catalog. Other applications and services consume the catalog and use
-the classifications to group assets for reports, user interfaces:
-whatever they want.
+Based on matches, the application assigns groups (just strings,
+basically) to the object. You can imagine this as a way to take lots
+of related (but differently attributed objects) and grouping them
+appropriately. A data integration kind of thing.
 
 In other words, the Expression Langauge is a pattern-matching
-language for matching asset attributes, similar to (say) the way
+language for matching object attributes, similar to (say) the way
 regular expressions match strings.
 
 How does it work?
 
 Read on!
 
-# Assets
+# Value Objects
 
 The purpose of the Expression Language to match against specific
-assets. If the expression "matches" an asset, it returns true, if not,
-false.
+value objects (hash-maps). If the expression "matches" an asset, it returns
+true, if not, false.
 
 An asset is a collection of attributes. Each clause in the language is
 an expression that can match against one of those attributes. One
 attribute, one clause.
 
-Here's what a typical asset looks like as far as the Expression
+Here's what a typical "server" object looks like as far as the Expression
 Language is concerned:
 
-    { :asset/asset-id : "A001"
-      :asset/location : "east"
-      :asset/os       : "unix"
-      :asset/hostname : "ed5d.z.host.com"
-      :asset/hostname : "8603.b.host.com"
-      :asset/hostname : "5967.b.host.com"
-      :asset/ipv4     : "10.32.159.141"
-      :asset/ipv4     : "192.168.32.110"
-      :asset/ipv4     : "172.16.32.46"
-      :asset/arch     : "itanium"
-      :asset/app      : "oracle"
-      :asset/nameserv : "192.168.10.10"
-      :asset/nameserv : "192.168.99.99"
-      :asset/platform : "hpux"  }
+```clojure
+    { :asset-id : "A001"
+      :location : "east"
+      :os       : "unix"
+      :hostname : "ed5d.z.host.com"
+      :hostname : "8603.b.host.com"
+      :hostname : "5967.b.host.com"
+      :ipv4     : "10.32.159.141"
+      :ipv4     : "192.168.32.110"
+      :ipv4     : "172.16.32.46"
+      :arch     : "itanium"
+      :app      : "oracle"
+      :nameserv : "192.168.10.10"
+      :nameserv : "192.168.99.99"
+      :platform : "hpux"  }
+```
 
-
-All the attributes together make up an asset "entity". And, yes, it's
-possible for any given attribute to have more than one value (except
-for `:asset/asset-id`).
+Yes, it's possible for any given attribute to have more than one
+value.
 
 The goal of the Expression Language is to search for and find specific
-asset entities via the values attached to their attributes.
+objects via the values attached to their attributes, but to not
+require any specific attribute on input.
 
 Here's an example of a typical expression:
 
-    (and (= :asset/location "east")
-         (= :asset/os "unix"))
+```clojure
+    (and (= :location "east")
+         (= :os "unix"))
+```
 
-This expression returns true when applied to the above example asset
-because the attributes in the matching clauses: `:asset/location` and
-`:asset/os` match the values in the asset: "east" and "unix". (See
-more [Examples][Examples] below.)
+This expression returns true when applied to the above example object
+because the attributes in the matching clauses: `:location` and `:os`
+match the values in the asset: "east" and "unix". (See more
+[Examples][Examples] below.)
 
 The use of `and` in the above is a _logical_ clause because it's made
 up of other clauses, rather than being one itself.
@@ -101,7 +104,7 @@ An expression is made up of _matching_ clauses and _logical_ clauses.
 
 A _match_ clause has the following form:
 
-    (operator :asset/attribute value)
+    (operator :attribute value)
 
 Three elements that can be evaluated to "true" or "false" when applied
 to a value named by the attribute. A clause uses prefix notation, the
@@ -116,9 +119,8 @@ Details:
   can match" semantics.
 
  - **attribute** <br/> An attribute is the name of a value attached to
-   an asset. For instance: `:asset/name`, `:asset/ipv4`,
-   `:asset/network-group` and so on. All attributes must start with
-   the `:asset/` prefix.
+   an object. For instance: `:name`, `:ipv4`,
+   `:network-group` and so on.
 
  - **value** <br/> The value represents what you expect the attribute
    to be for the clause to return true, depending on the operator. For
@@ -172,51 +174,48 @@ Operators are really just functions that take an attribute and a
 value. It's implied that the attribute is attached to a specific
 asset.
 
-The following examples use `:p` to stand in for things like
-`:asset/name` so that they fit better in a table. As stated
-previously, all attributes must begin with `:asset/`.
-
 **Important**: If a clause contains an attribute that doesn't exist
-for a given asset, it'll return false.
+for a given asset, it'll return false, which is not necessarily a bad
+thing. That's why we have the `or` logical operator.
 
 ## Matching Operators
 
 Right now, you can use the following operators as part of any
 expression clause:
 
-    |----------+----------------------------+-----------------------------|
-    | Operator | Function                   | Example                     |
-    |----------+----------------------------+-----------------------------|
-    | =        | exact match                | (= :p "192.168.1.10")       |
-    | not=     | does not match             | (not= :p "foo")             |
-    | cidr     | match on network CIDR      | (cidr :p "192.168/16")      |
-    | match    | regular expression match   | (match :p "^.*host.com")    |
-    |----------+----------------------------+-----------------------------|
+|----------|----------------------------|-----------------------------|
+| Operator | Function                   | Example                     |
+|----------|----------------------------|-----------------------------|
+| =        | exact match                | (= :p "192.168.1.10")       |
+| not=     | does not match             | (not= :p "foo")             |
+| cidr     | match on network CIDR      | (cidr :p "192.168/16")      |
+| match    | regular expression match   | (match :p "^.*host.com")    |
+|----------|----------------------------|-----------------------------|
 
 ## Numerical Operators
 
 The following operators assume numeric attribute values.
 
-    |----------+----------------------------+-----------------------------|
-    | Operator | Function                   | Example                     |
-    |----------+----------------------------+-----------------------------|
-    | >        | greater than               | (> :p 23)                   |
-    | <        | less than                  | (< :p 33)                   |
-    | <=       | less than or equal to      | (<= :p 33)                  |
-    | >=       | greather than or equal to  | (>= :p 44)                  |
-    |----------+----------------------------+-----------------------------|
+|----------|----------------------------|-----------------------------|
+| Operator | Function                   | Example                     |
+|----------|----------------------------|-----------------------------|
+| >        | greater than               | (> :p 23)                   |
+| <        | less than                  | (< :p 33)                   |
+| <=       | less than or equal to      | (<= :p 33)                  |
+| >=       | greather than or equal to  | (>= :p 44)                  |
+|----------|----------------------------|-----------------------------|
 
 ## Logical Operators
 
 The following are logical operators which let you use boolean logic in
 relating one clause to another.
 
-    |----------+----------------------------+-----------------------------|
-    | Operator | Function                   | Example                     |
-    |----------+----------------------------+-----------------------------|
-    | and      | less than or equal to      | (and (<= :p 33) (>= :p 44)) |
-    | or       | true of any clause is true | (or (>= :p 100) (<= :p 50)) |
-    |----------+----------------------------+-----------------------------|
+|----------|----------------------------|-----------------------------|
+| Operator | Function                   | Example                     |
+|----------|----------------------------|-----------------------------|
+| and      | less than or equal to      | (and (<= :p 33) (>= :p 44)) |
+| or       | true of any clause is true | (or (>= :p 100) (<= :p 50)) |
+|----------|----------------------------|-----------------------------|
 
 # Examples
 
@@ -224,42 +223,41 @@ In general, expressions can use the operators as defined above and
 can use just about any value that makes sense (a match must use a
 regex, a numeric operator must use a number).
 
-The actual attributes in the database at any given time are fluid in
-the sense that there might be new ones as more data about assets flows
-into the system.
-
-In fact, the very reason the Classification Service exists is to
-provide a way to unify these varying attributes into a user
-customizable set of classifications appropriate for, say, a business.
-
 The following are a few examples about the kinds of things you can do
 with the expression language.
 
-The following rule matches an asset running Windows that has a
-hostname ending in "b.host.com":
+The following rule matches a value object describing a server running
+Windows that has a hostname ending in "b.host.com":
 
-    (and (= :asset/os "windows")
-         (match :asset/hostname "*.host.com"))
+```clojure
+    (and (= :os "windows")
+         (match :hostname "*.host.com"))
+```
 
-The following rule matches an asset with a score in a particular range
-that's also a web server of some sort:
+The following rule matches a server value object with a score in a
+particular range that's also a web server of some sort:
 
-    (and (and (>= :asset/score 26)
-              (<= :asset/score 75))
-         (or (= :asset/app "apache")
-             (= :asset/app "nginx")
-             (= :asset/app "iis")))
+```clojure
+    (and (and (>= :score 26)
+              (<= :score 75))
+         (or (= :app "apache")
+             (= :app "nginx")
+             (= :app "iis")))
+```
 
-The following rule matches an asset on a certain network, with a
-certain nameserver. Note that this particular expression can handle
-assets with different attributes that mean the same thing, in this
-case, `ipv4`, `ip` and `inet-address`, all of which mean the same
+The following rule matches a server value object on a certain network,
+with a certain name server. Note that this particular expression can
+handle assets with different attributes that mean the same thing, in
+this case, `ipv4`, `ip` and `inet-address`, all of which mean the same
 thing but come from different taxonomies.
 
+
+```clojure
     (and (or (cidr :asset/ipv4 "144.64.3/24")
              (cidr :asset/inet-address "144.64.3/24")
              (cidr :asset/ip "144.64.3/24"))
          (= :asset/nameserver "8.8.8.8"))
+```
 
 Ultimately, the best way to learn to use the expressions is to try
 them out, which is beyond the scope of this document.
@@ -285,7 +283,7 @@ your favorite language.
     cidr       = <'cidr'>
     or         = <'or'>
     and        = <'and'>
-    attribute  = #':asset/[^ \t\n]+'
+    attribute  = #':[^ \t\n]+'
     <value>    = string | integer
     string     = dquote #'[A-Za-z0-9^$.*?+<>{}()@#: /\\\\]*' dquote
     integer    = #'[0-9]+'
