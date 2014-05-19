@@ -18,10 +18,10 @@ For example, server information pulled from disparate sources and
 systems:
 
 ```clojure
-    {:name   "foo23.bar.com" :ip   "192.168.1.2"}
-    {:name   "foo11.bar.com" :inet "192.168.1.3"}
-    {:dns    "foo99.bar.com" :ipv4 #{"10.10.1.1", "192.168.1.1"}}
-    {:server "foo1.host.com" :ip   "176.88.1.5"}
+ {:name   "foo23.bar.com" :ip   "192.168.1.2"}
+ {:name   "foo11.bar.com" :inet "192.168.1.3"}
+ {:dns    "foo99.bar.com" :ipv4 #{"10.10.1.1", "192.168.1.1"}}
+ {:server "foo1.host.com" :ip   "176.88.1.5"}
 ```
 
 Furthermore, some of the attributes have multiple values (as seen on
@@ -31,12 +31,12 @@ If you want to find all the `bar.com` servers on the `192.168.1`
 network, you can create an expression like this:
 
 ```clojure
-    (and (or (match :name   ".*bar.com$")
-             (match :dns    ".*bar.com$")
-             (match :server ".*bar.com$"))
-         (or (cidr  :ip     "192.168.1/24")
-             (cidr  :inet   "192.168.1/24")
-             (cidr  :ipv4   "192.168.1/24")))
+ (and (or (match :name   ".*bar.com$")
+          (match :dns    ".*bar.com$")
+          (match :server ".*bar.com$"))
+      (or (cidr  :ip     "192.168.1/24")
+          (cidr  :inet   "192.168.1/24")
+          (cidr  :ipv4   "192.168.1/24")))
 ```
 
 In English: Find all the servers in which either `:name` or `:dns` or
@@ -46,29 +46,29 @@ in the "192.168.1/24" CIDR range.
 You might use this in a Clojure app like:
 
 ```clojure
-    (require '[match-expr.core :as expr])
+ (require '[match-expr.core :as expr])
 
-    (def rule (expr/parse '(and (or (match :name   ".*bar.com$")
-                                    (match :dns    ".*bar.com$")
-                                    (match :server ".*bar.com$"))
-                                (or (cidr  :ip     "192.168.1/24")
-                                    (cidr  :inet   "192.168.1/24")
-                                    (cidr  :ipv4   "192.168.1/24")))))
+ (def rule (expr/parse '(and (or (match :name   ".*bar.com$")
+                                 (match :dns    ".*bar.com$")
+                                 (match :server ".*bar.com$"))
+                             (or (cidr  :ip     "192.168.1/24")
+                                 (cidr  :inet   "192.168.1/24")
+                                 (cidr  :ipv4   "192.168.1/24")))))
 
-    (defn special-server?
-      [server]
-      (expr/eval server expr))
+ (defn special-server?
+   [server]
+   (expr/eval server expr))
 
-    (let [all-servers (retrieve-server-data)]
-      (filter special-server? data))
+ (let [all-servers (retrieve-server-data)]
+   (filter special-server? data))
 ```
 
 If all goes well, the result should be:
 
 ```clojure
-    {:name   "foo23.bar.com" :ip   "192.168.1.2"}
-    {:name   "foo11.bar.com" :inet "192.168.1.3"}
-    {:dns    "foo99.bar.com" :ipv4 #{"10.10.1.1", "192.168.1.1"}}
+ {:name   "foo23.bar.com" :ip   "192.168.1.2"}
+ {:name   "foo11.bar.com" :inet "192.168.1.3"}
+ {:dns    "foo99.bar.com" :ipv4 #{"10.10.1.1", "192.168.1.1"}}
 ```
 
 ## Context
@@ -94,6 +94,8 @@ This is my attempt at doing that.
 
  - The parser/evaluator should return a function rather than walk the
    expression tree for each comparison.
+
+ - Figure out if this can be used from Java.
 
 ## License
 
