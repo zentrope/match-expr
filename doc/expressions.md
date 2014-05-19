@@ -18,16 +18,18 @@ The general use case for the language is an application that applies
 each expression to a bunch of key/value hash maps in a data store,
 looking for matches, something like this bit of pseudo-Python:
 
-    class Rule:
-      expr = '(and (= :a "1") (= :b "2"))'
-      groups = ["Cool", "Snazzy"]
+```python
+class Rule:
+  expr = '(and (= :a "1") (= :b "2"))'
+  groups = ["Cool", "Snazzy"]
 
-    def filterObjects(objects, rule):
-        matches = []
-        for object in objects:
-            if eval(object, rule.expr):
-                matches.append([object.id, rule.groups])
-            return matches
+def filterObjects(objects, rule):
+    matches = []
+    for object in objects:
+        if eval(object, rule.expr):
+            matches.append([object.id, rule.groups])
+        return matches
+```
 
 Based on matches, the application assigns groups (just strings,
 basically) to the object. You can imagine this as a way to take lots
@@ -56,20 +58,20 @@ Here's what a typical "server" object looks like as far as the Expression
 Language is concerned:
 
 ```clojure
-    { :asset-id : "A001"
-      :location : "east"
-      :os       : "unix"
-      :hostname : "ed5d.z.host.com"
-      :hostname : "8603.b.host.com"
-      :hostname : "5967.b.host.com"
-      :ipv4     : "10.32.159.141"
-      :ipv4     : "192.168.32.110"
-      :ipv4     : "172.16.32.46"
-      :arch     : "itanium"
-      :app      : "oracle"
-      :nameserv : "192.168.10.10"
-      :nameserv : "192.168.99.99"
-      :platform : "hpux"  }
+{ :asset-id : "A001"
+  :location : "east"
+  :os       : "unix"
+  :hostname : "ed5d.z.host.com"
+  :hostname : "8603.b.host.com"
+  :hostname : "5967.b.host.com"
+  :ipv4     : "10.32.159.141"
+  :ipv4     : "192.168.32.110"
+  :ipv4     : "172.16.32.46"
+  :arch     : "itanium"
+  :app      : "oracle"
+  :nameserv : "192.168.10.10"
+  :nameserv : "192.168.99.99"
+  :platform : "hpux"  }
 ```
 
 Yes, it's possible for any given attribute to have more than one
@@ -82,8 +84,8 @@ require any specific attribute on input.
 Here's an example of a typical expression:
 
 ```clojure
-    (and (= :location "east")
-         (= :os "unix"))
+(and (= :location "east")
+     (= :os "unix"))
 ```
 
 This expression returns true when applied to the above example object
@@ -104,7 +106,9 @@ An expression is made up of _matching_ clauses and _logical_ clauses.
 
 A _match_ clause has the following form:
 
-    (operator :attribute value)
+```clojure
+(operator :attribute value)
+```
 
 Three elements that can be evaluated to "true" or "false" when applied
 to a value named by the attribute. A clause uses prefix notation, the
@@ -132,12 +136,14 @@ All _matching_-style clauses are made up of those three terms.
 
 Clauses can be nested to an arbitrary depth by logical operators.
 
-    (and (or clause
-             (and clause clause)
-             clause)
-         (and clause
-              clause
-              clause))
+```clojure
+(and (or clause
+         (and clause clause)
+         clause)
+     (and clause
+          clause
+          clause))
+```
 
 The `and` and `or` operators are just what you'd expect from other
 programming languages, though in this case, you can have as many
@@ -151,9 +157,11 @@ language.)
 
 The following expression:
 
-    (or logical-or-match-clause
-        logical-or-match-clause
-        logical-or-match-clause)
+```clojure
+(or logical-or-match-clause
+    logical-or-match-clause
+    logical-or-match-clause)
+```
 
 evaluates to "true" if _any one_ of the clauses evaluates to true.
 
@@ -161,9 +169,11 @@ evaluates to "true" if _any one_ of the clauses evaluates to true.
 
 The following expression:
 
-    (and logical-or-match-clause
-         logical-or-match-clause
-         logical-or-match-clause)
+```clojure
+(and logical-or-match-clause
+     logical-or-match-clause
+     logical-or-match-clause)
+```
 
 evaluates to "true" if and only if _all_ of the clauses evaluates to
 true.
@@ -183,39 +193,33 @@ thing. That's why we have the `or` logical operator.
 Right now, you can use the following operators as part of any
 expression clause:
 
-|----------|----------------------------|-----------------------------|
 | Operator | Function                   | Example                     |
 |----------|----------------------------|-----------------------------|
 | =        | exact match                | (= :p "192.168.1.10")       |
 | not=     | does not match             | (not= :p "foo")             |
 | cidr     | match on network CIDR      | (cidr :p "192.168/16")      |
 | match    | regular expression match   | (match :p "^.*host.com")    |
-|----------|----------------------------|-----------------------------|
 
 ## Numerical Operators
 
 The following operators assume numeric attribute values.
 
-|----------|----------------------------|-----------------------------|
 | Operator | Function                   | Example                     |
 |----------|----------------------------|-----------------------------|
 | >        | greater than               | (> :p 23)                   |
 | <        | less than                  | (< :p 33)                   |
 | <=       | less than or equal to      | (<= :p 33)                  |
 | >=       | greather than or equal to  | (>= :p 44)                  |
-|----------|----------------------------|-----------------------------|
 
 ## Logical Operators
 
 The following are logical operators which let you use boolean logic in
 relating one clause to another.
 
-|----------|----------------------------|-----------------------------|
 | Operator | Function                   | Example                     |
 |----------|----------------------------|-----------------------------|
 | and      | less than or equal to      | (and (<= :p 33) (>= :p 44)) |
 | or       | true of any clause is true | (or (>= :p 100) (<= :p 50)) |
-|----------|----------------------------|-----------------------------|
 
 # Examples
 
@@ -230,19 +234,19 @@ The following rule matches a value object describing a server running
 Windows that has a hostname ending in "b.host.com":
 
 ```clojure
-    (and (= :os "windows")
-         (match :hostname "*.host.com"))
+(and (= :os "windows")
+     (match :hostname "*.host.com"))
 ```
 
 The following rule matches a server value object with a score in a
 particular range that's also a web server of some sort:
 
 ```clojure
-    (and (and (>= :score 26)
-              (<= :score 75))
-         (or (= :app "apache")
-             (= :app "nginx")
-             (= :app "iis")))
+(and (and (>= :score 26)
+          (<= :score 75))
+     (or (= :app "apache")
+         (= :app "nginx")
+         (= :app "iis")))
 ```
 
 The following rule matches a server value object on a certain network,
@@ -253,10 +257,10 @@ thing but come from different taxonomies.
 
 
 ```clojure
-    (and (or (cidr :asset/ipv4 "144.64.3/24")
-             (cidr :asset/inet-address "144.64.3/24")
-             (cidr :asset/ip "144.64.3/24"))
-         (= :asset/nameserver "8.8.8.8"))
+(and (or (cidr :asset/ipv4 "144.64.3/24")
+         (cidr :asset/inet-address "144.64.3/24")
+         (cidr :asset/ip "144.64.3/24"))
+     (= :asset/nameserver "8.8.8.8"))
 ```
 
 Ultimately, the best way to learn to use the expressions is to try
