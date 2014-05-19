@@ -46,32 +46,27 @@ Read on!
 
 # Value Objects
 
-The purpose of the Expression Language to match against specific
-value objects (hash-maps). If the expression "matches" an asset, it returns
-true, if not, false.
+The purpose of the Expression Language to match against specific value
+objects (hash-maps). If the expression "matches" a value object, it
+returns true, if not, false.
 
-An asset is a collection of attributes. Each clause in the language is
-an expression that can match against one of those attributes. One
-attribute, one clause.
+A value object is a collection of attributes. Each clause in the
+language is an expression that can match against one of those
+attributes. One attribute, one clause.
 
 Here's what a typical "server" object looks like as far as the Expression
 Language is concerned:
 
 ```clojure
-{ :asset-id : "A001"
-  :location : "east"
-  :os       : "unix"
-  :hostname : "ed5d.z.host.com"
-  :hostname : "8603.b.host.com"
-  :hostname : "5967.b.host.com"
-  :ipv4     : "10.32.159.141"
-  :ipv4     : "192.168.32.110"
-  :ipv4     : "172.16.32.46"
-  :arch     : "itanium"
-  :app      : "oracle"
-  :nameserv : "192.168.10.10"
-  :nameserv : "192.168.99.99"
-  :platform : "hpux"  }
+{ :object-id : "A001"
+  :location  : "east"
+  :os        : "unix"
+  :hostname  : #{"ed5d.z.host.com", "8603.b.host.com", "5967.b.host.com"}
+  :ipv4      : #{"10.32.159.141", "192.168.32.110", "172.16.32.46"}
+  :arch      : "itanium"
+  :app       : "oracle"
+  :nameserv  : #{"192.168.10.10", "192.168.99.99"}
+  :platform  : "hpux"  }
 ```
 
 Yes, it's possible for any given attribute to have more than one
@@ -90,7 +85,7 @@ Here's an example of a typical expression:
 
 This expression returns true when applied to the above example object
 because the attributes in the matching clauses: `:location` and `:os`
-match the values in the asset: "east" and "unix". (See more
+match the values in the value object: "east" and "unix". (See more
 [Examples][Examples] below.)
 
 The use of `and` in the above is a _logical_ clause because it's made
@@ -182,11 +177,11 @@ true.
 
 Operators are really just functions that take an attribute and a
 value. It's implied that the attribute is attached to a specific
-asset.
+value object.
 
 **Important**: If a clause contains an attribute that doesn't exist
-for a given asset, it'll return false, which is not necessarily a bad
-thing. That's why we have the `or` logical operator.
+for a given value object, it'll return false, which is not necessarily
+a bad thing. That's why we have the `or` logical operator.
 
 ## Matching Operators
 
@@ -251,16 +246,16 @@ particular range that's also a web server of some sort:
 
 The following rule matches a server value object on a certain network,
 with a certain name server. Note that this particular expression can
-handle assets with different attributes that mean the same thing, in
-this case, `ipv4`, `ip` and `inet-address`, all of which mean the same
-thing but come from different taxonomies.
+handle value objects with different attributes that mean the same
+thing, in this case, `ipv4`, `ip` and `inet-address`, all of which
+mean the same thing but come from different taxonomies.
 
 
 ```clojure
-(and (or (cidr :asset/ipv4 "144.64.3/24")
-         (cidr :asset/inet-address "144.64.3/24")
-         (cidr :asset/ip "144.64.3/24"))
-     (= :asset/nameserver "8.8.8.8"))
+(and (or (cidr :ipv4 "144.64.3/24")
+         (cidr :inet-address "144.64.3/24")
+         (cidr :ip "144.64.3/24"))
+     (= :nameserver "8.8.8.8"))
 ```
 
 Ultimately, the best way to learn to use the expressions is to try
