@@ -22,11 +22,6 @@
 
 (defn- to-int
   [s]
-  ;;
-  ;; Checks for a set due to the way we store values, as sets, even if
-  ;; there's one. Numeric operators will always assume there's just
-  ;; one value, so we take the first.
-  ;;
   (try
     (if (integer? s)
       s
@@ -104,10 +99,8 @@
 (defn- comp-matching-clause
   [[op & exprs]]
   (let [op-fn (lookup-op op)]
-    (if (nil? op-fn)
-      (error "Unknown operator." op)
-      (fn [data]
-        (op-fn data (first exprs) (second exprs))))))
+    (fn [data]
+      (op-fn data (first exprs) (second exprs)))))
 
 (defn- comp
   [expr]
