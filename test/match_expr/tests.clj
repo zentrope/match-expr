@@ -1,12 +1,12 @@
 (ns match-expr.tests
-  (:refer-clojure :exclude [eval])
+  (:refer-clojure :exclude [eval compile])
   (:require
     [clojure.test :refer :all]
-    [match-expr.core :refer [parse eval]]))
+    [match-expr.core :refer [compile eval]]))
 
 (defn do-eval
   [data expr]
-  (eval data (parse (str expr))))
+  (eval data (compile (str expr))))
 
 ;; |----------+----------------------------+-----------------------------|
 ;; | Operator | Function                   | Example                     |
@@ -28,10 +28,10 @@
 (deftest test-not-equality
   (testing "Testing not= operator"
     (let [data {:a "1" :b #{"2" "3"}}]
-      (is (false? (eval data '(not= :a "1"))))
-      (is (false? (eval data '(not= :b "2"))))
-      (is (false? (eval data '(not= :b "3"))))
-      (is (true?  (eval data '(not= :a "2")))))))
+      (is (false? (do-eval data '(not= :a "1"))))
+      (is (false? (do-eval data '(not= :b "2"))))
+      (is (false? (do-eval data '(not= :b "3"))))
+      (is (true?  (do-eval data '(not= :a "2")))))))
 
 (deftest test-cidr
   (testing "Testing cidr operator"

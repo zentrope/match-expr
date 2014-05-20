@@ -1,7 +1,7 @@
-(ns match-expr.interpreter
+(ns match-expr.impl.interpreter
   (:refer-clojure :exclude [eval])
   (:require
-    [match-expr.cidr :as cidr]
+    [match-expr.impl.cidr :as cidr]
     [clojure.edn :as reader]))
 
 ;;----------------------------------------------------------------------------

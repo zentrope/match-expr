@@ -1,18 +1,19 @@
 (ns match-expr.core
-  (:refer-clojure :exclude [eval])
-  (:gen-class)
+  (:refer-clojure :exclude [eval compile])
   (:require
-    [match-expr.interpreter :as interpreter]))
+    [match-expr.impl.compiler :as compiler]))
 
 (defn parse
   [expr]
-  (if (string? expr)
-    (interpreter/parse expr)
-    expr))
+  (compiler/compile expr))
+
+(defn compile
+  [expr]
+  (parse expr))
 
 (defn eval
   [data expr]
-  (interpreter/eval data expr))
+  (compiler/eval data expr))
 
 (defn -main
   [& args]

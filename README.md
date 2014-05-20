@@ -48,12 +48,12 @@ You might use this in a Clojure app like:
 ```clojure
  (require '[match-expr.core :as expr])
 
- (def rule (expr/parse '(and (or (match :name   ".*bar.com$")
-                                 (match :dns    ".*bar.com$")
-                                 (match :server ".*bar.com$"))
-                             (or (cidr  :ip     "192.168.1/24")
-                                 (cidr  :inet   "192.168.1/24")
-                                 (cidr  :ipv4   "192.168.1/24")))))
+ (def rule (expr/compile '(and (or (match :name   ".*bar.com$")
+                                   (match :dns    ".*bar.com$")
+                                   (match :server ".*bar.com$"))
+                               (or (cidr  :ip     "192.168.1/24")
+                                   (cidr  :inet   "192.168.1/24")
+                                   (cidr  :ipv4   "192.168.1/24")))))
 
  (defn special-server?
    [server]
@@ -92,8 +92,8 @@ This is my attempt at doing that.
  - The numeric comparison operators should work with multiple
    values for a single key.
 
- - The parser/evaluator should return a function rather than walk the
-   expression tree for each comparison.
+ - ~~The parser/evaluator should return a function rather than walk the
+   expression tree for each comparison.~~
 
  - Figure out if this can be used from Java.
 

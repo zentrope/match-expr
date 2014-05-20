@@ -1,4 +1,4 @@
-(ns match-expr.cidr)
+(ns match-expr.impl.cidr)
 
 (defn- expt
   [x pow]
