@@ -7,10 +7,6 @@
 
 ;;-----------------------------------------------------------------------------
 
-(defn- third
-  [exp]
-  (first (rest (rest exp))))
-
 (defn- error
   [& terms]
   (throw (ex-info (clojure.string/join " " terms)) {}))
