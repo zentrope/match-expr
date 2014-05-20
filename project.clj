@@ -1,4 +1,4 @@
-(defproject match-expr "0.1.0"
+(defproject com.zentrope/match-expr "0.1.0"
 
   :description "Lisp-like expressions for matching hashmaps."
 
@@ -11,4 +11,7 @@
   :min-lein-version "2.3.4"
   :target-path "target/%s"
   :jvm-opts ["-Dapple.awt.UIElement=true"]
-  :profiles {:uberjar {:aot :all}})
+  :scm {:name "git" :url "https://github.com/zentrope/match-expr"}
+  :profiles {:dev {:dependencies [[org.clojure/tools.nrepl "0.2.3"]
+                                  [clojure-complete "0.2.3"]]}
+             :uberjar {:aot :all}})
